@@ -465,8 +465,15 @@ defmodule Mimic do
   end
 
   defp raise_if_not_exported_function!(module, fn_name, arity) do
-    unless function_exported?(module, fn_name, arity) do
-      raise ArgumentError, "Function #{fn_name}/#{arity} not defined for #{inspect(module)}"
+    case Code.ensure_loaded(module) do
+      {:module, _module} ->
+        unless function_exported?(module, fn_name, arity) do
+          raise ArgumentError, "Function #{fn_name}/#{arity} not defined for #{inspect(module)}"
+        end
+
+      {:error, reason}
+      when reason in [:embedded, :badfile, :nofile, :on_load_failure, :unavailable] ->
+        raise ArgumentError, "Module #{inspect(module)} is not available"
     end
   end
 
